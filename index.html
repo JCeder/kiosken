@@ -354,13 +354,16 @@
 
         function renderProducts() {
             const grid = document.getElementById('product-grid');
-            grid.innerHTML = products.map(p => `
+            grid.innerHTML = products.map(p => {
+                // Använd paketet som fallback om ingen ikon angetts. Det håller designen enhetlig.
+                const displayIcon = p.icon ? p.icon : '📦';
+                return `
                 <button onclick="addToCart('${p.id}')" class="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center shadow-sm hover:shadow-md hover:border-blue-400 hover:bg-blue-50 transition-all active:scale-95 h-full min-h-[120px]">
-                    ${p.icon ? `<span class="text-4xl mb-2">${p.icon}</span>` : ''}
+                    <span class="text-4xl mb-2">${displayIcon}</span>
                     <span class="text-sm font-semibold text-gray-800 text-center leading-tight mb-1 h-10 flex items-center justify-center w-full">${p.name}</span>
                     <span class="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg shrink-0 mt-auto">${p.price} kr</span>
                 </button>
-            `).join('');
+            `}).join('');
         }
 
         function renderCart() {
@@ -388,11 +391,13 @@
                     const itemTotal = product.price * safeQty;
                     total += itemTotal;
 
+                    const displayIcon = product.icon ? product.icon : '📦';
+
                     cartHtml += `
                         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all mb-3">
                             <div class="flex items-start justify-between mb-3">
                                 <div class="flex items-center gap-3 pr-2">
-                                    ${product.icon ? `<span class="text-3xl bg-gray-50 p-2 rounded-xl shrink-0">${product.icon}</span>` : ''}
+                                    <span class="text-3xl bg-gray-50 p-2 rounded-xl shrink-0">${displayIcon}</span>
                                     <div>
                                         <div class="font-bold text-gray-800 leading-tight">${product.name}</div>
                                         <div class="text-sm text-gray-500 mt-0.5">${product.price} kr/st</div>
@@ -529,7 +534,14 @@
         }
 
         function productsToText() {
-            return products.map(p => p.icon ? `${p.name}, ${p.price}, ${p.icon}` : `${p.name}, ${p.price}`).join('\n');
+            // Spara bara namnet och priset om emojin är vår fallback '📦' (vilket vi satte in när vi sparade)
+            return products.map(p => {
+                if(p.icon && p.icon !== '📦') {
+                    return `${p.name}, ${p.price}, ${p.icon}`;
+                } else {
+                    return `${p.name}, ${p.price}`;
+                }
+            }).join('\n');
         }
 
         function textToProducts(text) {
@@ -541,6 +553,7 @@
                     return {
                         name: (parts[0] || '').trim(),
                         price: parseInt(parts[1]), 
+                        // Om ingen ikon angavs skickar vi med en tom sträng här, escapeHTML och default hanterar resten senare
                         icon: parts[2] ? parts[2].trim() : ''
                     };
                 })
@@ -553,7 +566,7 @@
                     id: 'item_' + i,
                     name: escapeHTML(item.name || 'Vara'),
                     price: Math.min(100000, item.price), 
-                    icon: item.icon ? escapeHTML(item.icon) : ''
+                    icon: item.icon ? escapeHTML(item.icon) : '' // Spara tom sträng om ingen emoji angavs, render-funktionen fixar fallback
                 };
             });
         }
