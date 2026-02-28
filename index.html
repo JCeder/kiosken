@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#2563EB">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏪</text></svg>">
     
@@ -15,12 +15,16 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         body { overscroll-behavior-y: none; } /* Stoppar pull-to-refresh */
+        
+        /* Hantering av safe-areas för moderna mobiler (t.ex. iPhone "flärp" och hem-streck) */
+        .pb-safe { padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+<!-- Bytte h-screen mot h-[100dvh] för att hantera dynamiska webbläsar-menyer -->
+<body class="bg-gray-100 text-gray-800 font-sans h-[100dvh] flex flex-col overflow-hidden">
 
     <!-- Header -->
-    <header class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center shrink-0 z-10">
+    <header class="bg-blue-600 text-white p-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-md flex justify-between items-center shrink-0 z-10">
         <h1 class="text-xl font-bold flex items-center gap-2">
             <span>🏪</span> Kiosken
         </h1>
@@ -49,7 +53,8 @@
                 <div class="text-center text-gray-400 mt-10 italic">Varukorgen är tom</div>
             </div>
 
-            <div class="p-4 bg-white border-t border-gray-200 shrink-0 pb-6 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] z-10">
+            <!-- Lade till .pb-safe för att skydda knappen mot mobilens underkant -->
+            <div class="p-4 bg-white border-t border-gray-200 shrink-0 pb-safe shadow-[0_-10px_20px_rgba(0,0,0,0.03)] z-10">
                 <div class="flex justify-between items-end mb-4">
                     <span class="text-gray-600 font-medium">Totalt att betala:</span>
                     <span id="total-price" class="text-3xl font-black text-gray-900">0 kr</span>
@@ -63,7 +68,8 @@
 
     <!-- Modal: Inställningar -->
     <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end sm:justify-center sm:items-center">
-        <div class="bg-white w-full sm:w-96 rounded-t-2xl sm:rounded-2xl p-6 transform transition-transform translate-y-full sm:translate-y-0 max-h-[90vh] overflow-y-auto" id="settings-content">
+        <!-- Max-höjd och scroll ifall menyn blir lång på små skärmar -->
+        <div class="bg-white w-full sm:w-96 rounded-t-2xl sm:rounded-2xl p-6 pb-safe transform transition-transform translate-y-full sm:translate-y-0 max-h-[90vh] overflow-y-auto" id="settings-content">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-bold">Inställningar</h3>
                 <button onclick="closeSettings()" class="text-gray-500 hover:text-gray-800 p-2 bg-gray-100 rounded-full">
@@ -101,7 +107,7 @@
 
     <!-- Modal: QR Kod (Checkout) -->
     <div id="qr-modal" class="fixed inset-0 bg-white z-50 hidden flex-col">
-        <div class="p-4 flex justify-between items-center border-b shrink-0 bg-white">
+        <div class="p-4 pt-[max(1rem,env(safe-area-inset-top))] flex justify-between items-center border-b shrink-0 bg-white">
             <h3 class="text-xl font-bold">Skanna och betala</h3>
             <button onclick="closeQRModal()" class="text-gray-500 p-2 rounded-full bg-gray-100 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
@@ -121,7 +127,7 @@
                 </div>
             </div>
         </div>
-        <div class="p-6 bg-white border-t shrink-0">
+        <div class="p-6 pb-safe bg-white border-t shrink-0">
             <button onclick="finishOrder()" class="w-full bg-blue-600 text-white font-bold text-xl py-4 rounded-xl shadow-md active:scale-[0.98] transition">Betalning mottagen - Ny kund</button>
         </div>
     </div>
@@ -307,7 +313,6 @@
             }, 0);
         }
 
-        // Håll skärmen vaken när QR-koden visas
         async function requestWakeLock() {
             if ('wakeLock' in navigator) {
                 try { wakeLock = await navigator.wakeLock.request('screen'); } 
@@ -340,12 +345,8 @@
         function generateSwishQR(amount) {
             const qrContainer = document.getElementById('qrcode');
             qrContainer.innerHTML = ''; 
-            
-            // Rensa format
             const cleanNumber = swishNumber.replace(/[\s-]/g, '');
             const cleanMessage = swishMessage.replace(/;/g, ',');
-            
-            // Format för Swish QR: C{mottagare};{belopp};{meddelande};{låskod}
             const swishString = `C${cleanNumber};${amount};${cleanMessage};0`;
 
             qrCodeObj = new QRCode(qrContainer, {
