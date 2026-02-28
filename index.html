@@ -131,21 +131,24 @@
                 <span>Tillbaka</span>
             </button>
         </div>
-        <div class="flex-1 flex flex-col items-center justify-center p-6 bg-gray-50">
-            <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col items-center max-w-sm w-full">
+        <div class="flex-1 min-h-0 overflow-y-auto bg-gray-50 flex flex-col items-center p-6">
+            <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col items-center max-w-sm w-full my-auto">
                 <div class="text-gray-500 mb-2 font-medium">Att betala</div>
                 <div class="flex items-center gap-2 mb-8">
                     <span id="qr-total-price" class="text-5xl font-black text-[#32C6A6]">0 kr</span>
                 </div>
                 <div id="qrcode" class="bg-white p-3 border-4 border-gray-800 rounded-2xl min-h-[250px] min-w-[250px] flex items-center justify-center"></div>
                 <div class="flex items-center gap-2 mt-8 text-gray-500 font-medium bg-gray-100 px-4 py-2 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" /></svg>
-                    <span>Skanna med kameran eller Swish</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" /></svg>
+                    <span class="text-sm sm:text-base text-center">Skanna med kameran eller Swish</span>
                 </div>
             </div>
         </div>
         <div class="p-6 pb-safe bg-white border-t shrink-0">
-            <button onclick="finishOrder()" class="w-full bg-blue-600 text-white font-bold text-xl py-4 rounded-xl shadow-md active:scale-[0.98] transition">Betalning mottagen - Ny kund</button>
+            <button onclick="finishOrder()" class="w-full bg-[#32C6A6] text-white font-bold text-xl py-4 rounded-xl shadow-lg active:scale-[0.98] transition flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                Avsluta köp & Ny kund
+            </button>
         </div>
     </div>
 
