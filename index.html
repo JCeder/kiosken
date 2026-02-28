@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2563EB">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏪</text></svg>">
+    
+    <title>Kiosken POS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Optimeringar för mobil webbläsare */
+        button { touch-action: manipulation; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { overscroll-behavior-y: none; } /* Stoppar pull-to-refresh */
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center shrink-0 z-10">
+        <h1 class="text-xl font-bold flex items-center gap-2">
+            <span>🏪</span> Kiosken
+        </h1>
+        <button onclick="openSettings()" class="p-2 bg-blue-700 rounded-full hover:bg-blue-800 transition" aria-label="Inställningar">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        </button>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col overflow-hidden max-w-2xl mx-auto w-full relative">
+        <div class="p-4 overflow-y-auto no-scrollbar shrink-0" style="max-height: 45%;">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Produkter</h2>
+            <div id="product-grid" class="grid grid-cols-3 gap-3"></div>
+        </div>
+
+        <div class="flex-1 bg-white rounded-t-3xl shadow-[0_-4px_15px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden border-t border-gray-200">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+                <h2 class="text-lg font-bold text-gray-800">Aktuell order</h2>
+                <button onclick="clearCart()" class="text-red-500 text-sm font-medium hover:text-red-700 px-2 py-1 bg-red-50 rounded transition-colors">Töm</button>
+            </div>
+            
+            <div id="cart-items" class="p-4 flex-1 overflow-y-auto space-y-3">
+                <div class="text-center text-gray-400 mt-10 italic">Varukorgen är tom</div>
+            </div>
+
+            <div class="p-4 bg-white border-t border-gray-200 shrink-0 pb-6 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] z-10">
+                <div class="flex justify-between items-end mb-4">
+                    <span class="text-gray-600 font-medium">Totalt att betala:</span>
+                    <span id="total-price" class="text-3xl font-black text-gray-900">0 kr</span>
+                </div>
+                <button id="checkout-btn" onclick="openQRModal()" disabled class="w-full bg-[#32C6A6] text-white font-bold text-xl py-4 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform transition active:scale-[0.98] flex justify-center items-center gap-2">
+                    Generera Swish-QR
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Inställningar -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end sm:justify-center sm:items-center">
+        <div class="bg-white w-full sm:w-96 rounded-t-2xl sm:rounded-2xl p-6 transform transition-transform translate-y-full sm:translate-y-0 max-h-[90vh] overflow-y-auto" id="settings-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold">Inställningar</h3>
+                <button onclick="closeSettings()" class="text-gray-500 hover:text-gray-800 p-2 bg-gray-100 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="swish-number-input">Ditt Swish-nummer</label>
+                    <input type="tel" id="swish-number-input" placeholder="T.ex. 1234567890" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="swish-message-input">Standardmeddelande</label>
+                    <input type="text" id="swish-message-input" placeholder="T.ex. P09 Kiosken" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
+                </div>
+
+                <div class="pt-4 border-t">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Meny & Priser</label>
+                    <p class="text-xs text-gray-500 mb-2">En vara per rad. Format: <b>Namn, Pris, Emoji</b></p>
+                    <textarea id="menu-input" rows="6" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono whitespace-nowrap overflow-x-auto"></textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex flex-col gap-3">
+                <button onclick="saveSettings()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg active:scale-[0.98] transition">Spara inställningar</button>
+                <button onclick="shareConfig()" class="w-full bg-indigo-50 text-indigo-700 font-bold py-3 rounded-lg border border-indigo-200 active:bg-indigo-100 transition flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                    Kopiera delningslänk
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: QR Kod (Checkout) -->
+    <div id="qr-modal" class="fixed inset-0 bg-white z-50 hidden flex-col">
+        <div class="p-4 flex justify-between items-center border-b shrink-0 bg-white">
+            <h3 class="text-xl font-bold">Skanna och betala</h3>
+            <button onclick="closeQRModal()" class="text-gray-500 p-2 rounded-full bg-gray-100 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                <span>Tillbaka</span>
+            </button>
+        </div>
+        <div class="flex-1 flex flex-col items-center justify-center p-6 bg-gray-50">
+            <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col items-center max-w-sm w-full">
+                <div class="text-gray-500 mb-2 font-medium">Att betala</div>
+                <div class="flex items-center gap-2 mb-8">
+                    <span id="qr-total-price" class="text-5xl font-black text-[#32C6A6]">0 kr</span>
+                </div>
+                <div id="qrcode" class="bg-white p-3 border-4 border-gray-800 rounded-2xl min-h-[250px] min-w-[250px] flex items-center justify-center"></div>
+                <div class="flex items-center gap-2 mt-8 text-gray-500 font-medium bg-gray-100 px-4 py-2 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" /></svg>
+                    <span>Skanna med kameran eller Swish</span>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 bg-white border-t shrink-0">
+            <button onclick="finishOrder()" class="w-full bg-blue-600 text-white font-bold text-xl py-4 rounded-xl shadow-md active:scale-[0.98] transition">Betalning mottagen - Ny kund</button>
+        </div>
+    </div>
+
+    <!-- Modal: Message/Alert -->
+    <div id="message-modal" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl w-full max-w-sm text-center shadow-2xl">
+            <div id="message-icon" class="text-4xl mb-3">⚠️</div>
+            <h3 id="message-title" class="text-xl font-bold mb-2 text-gray-800"></h3>
+            <p id="message-text" class="text-gray-600 mb-6 break-words"></p>
+            <button onclick="closeMessage()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Standardmeny
+        const defaultProducts = [
+            { id: 'item_0', name: 'Kaffe', price: 20, icon: '☕️' },
+            { id: 'item_1', name: 'Te', price: 15, icon: '🍵' },
+            { id: 'item_2', name: 'Bulle', price: 25, icon: '🥐' },
+            { id: 'item_3', name: 'Kaka', price: 15, icon: '🍪' },
+            { id: 'item_4', name: 'Dricka 33cl', price: 20, icon: '🥤' },
+            { id: 'item_5', name: 'Festis', price: 15, icon: '🧃' },
+            { id: 'item_6', name: 'Korv m bröd', price: 25, icon: '🌭' },
+            { id: 'item_7', name: 'Kexchoklad', price: 15, icon: '🍫' },
+            { id: 'item_8', name: 'Chips', price: 20, icon: '🥔' }
+        ];
+
+        // Ladda state från LocalStorage ELLER Standard
+        let products = JSON.parse(localStorage.getItem('kiosk_products')) || defaultProducts;
+        let swishNumber = localStorage.getItem('kiosk_swish_number') || '';
+        let swishMessage = localStorage.getItem('kiosk_swish_message') || 'Kiosken';
+        
+        let cart = JSON.parse(localStorage.getItem('kiosk_cart')) || {}; 
+        let qrCodeObj = null;
+        let wakeLock = null;
+
+        // --- INLÄSNING AV DELNINGSLÄNK VIA URL ---
+        function checkURLForSharedConfig() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const configParam = urlParams.get('config');
+            
+            if (configParam) {
+                try {
+                    // Avkoda Base64 till JSON-sträng, och sedan till objekt
+                    const config = JSON.parse(decodeURIComponent(atob(configParam)));
+                    
+                    if (config.num) {
+                        swishNumber = config.num;
+                        localStorage.setItem('kiosk_swish_number', swishNumber);
+                    }
+                    if (config.msg !== undefined) {
+                        swishMessage = config.msg;
+                        localStorage.setItem('kiosk_swish_message', swishMessage);
+                    }
+                    if (config.items && Array.isArray(config.items)) {
+                        products = config.items;
+                        localStorage.setItem('kiosk_products', JSON.stringify(products));
+                        cart = {}; // Töm korgen om menyn ändras
+                        saveCart();
+                    }
+
+                    // Städa bort ?config= från URL:en för en renare adressfält (om möjligt)
+                    if (!window.location.href.startsWith('data:') && !window.location.href.startsWith('blob:')) {
+                        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                        window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+                    }
+
+                    setTimeout(() => {
+                        showMessage("Kiosken uppdaterad!", "Swish-nummer, meddelande och prislista har laddats in framgångsrikt från länken.", "✅");
+                    }, 500);
+
+                } catch (e) {
+                    console.error("Fel vid inläsning av delningslänk:", e);
+                    setTimeout(() => {
+                        showMessage("Fel på länken", "Kunde inte läsa in inställningarna. Säkerställ att hela länken kopierades.", "❌");
+                    }, 500);
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkURLForSharedConfig();
+            renderProducts();
+            renderCart();
+            if (!swishNumber) setTimeout(openSettings, 500);
+        });
+
+        // --- FUNKTIONER FÖR BUTIKEN ---
+        function renderProducts() {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = products.map(p => `
+                <button onclick="addToCart('${p.id}')" class="bg-white border border-gray-200 rounded-xl p-3 flex flex-col items-center justify-center shadow-sm hover:shadow-md hover:border-blue-300 transition active:scale-95 active:bg-blue-50">
+                    <span class="text-3xl mb-1">${p.icon}</span>
+                    <span class="text-xs font-semibold text-gray-700 text-center leading-tight mb-1 h-8 flex items-center">${p.name}</span>
+                    <span class="text-sm font-bold text-blue-600">${p.price} kr</span>
+                </button>
+            `).join('');
+        }
+
+        function renderCart() {
+            const cartContainer = document.getElementById('cart-items');
+            const totalDisplay = document.getElementById('total-price');
+            const checkoutBtn = document.getElementById('checkout-btn');
+            
+            let total = 0;
+            let cartHtml = '';
+            let hasItems = false;
+
+            for (const [id, quantity] of Object.entries(cart)) {
+                if (quantity > 0) {
+                    const product = products.find(p => p.id === id);
+                    if(!product) {
+                        delete cart[id];
+                        continue;
+                    }
+                    hasItems = true;
+                    const itemTotal = product.price * quantity;
+                    total += itemTotal;
+
+                    cartHtml += `
+                        <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-100 shadow-sm transition-all">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">${product.icon}</span>
+                                <div>
+                                    <div class="font-semibold text-gray-800">${product.name}</div>
+                                    <div class="text-sm text-gray-500">${product.price} kr/st</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                                    <button onclick="removeFromCart('${id}')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-white rounded shadow-sm font-bold text-lg">-</button>
+                                    <span class="w-8 text-center font-bold text-gray-800">${quantity}</span>
+                                    <button onclick="addToCart('${id}')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-white rounded shadow-sm font-bold text-lg">+</button>
+                                </div>
+                                <div class="w-14 text-right font-bold text-gray-900">${itemTotal} kr</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            if (!hasItems) {
+                cartContainer.innerHTML = `<div class="text-center text-gray-400 mt-10 italic">Varukorgen är tom</div>`;
+                checkoutBtn.disabled = true;
+            } else {
+                cartContainer.innerHTML = cartHtml;
+                checkoutBtn.disabled = false;
+            }
+
+            totalDisplay.textContent = `${total} kr`;
+            cartContainer.scrollTop = cartContainer.scrollHeight;
+        }
+
+        function saveCart() { localStorage.setItem('kiosk_cart', JSON.stringify(cart)); }
+
+        function addToCart(productId, qty = 1) {
+            cart[productId] = (cart[productId] || 0) + qty;
+            saveCart();
+            renderCart();
+            if (navigator.vibrate) navigator.vibrate(20);
+        }
+
+        function removeFromCart(productId) {
+            if (cart[productId] && cart[productId] > 0) {
+                cart[productId]--;
+                if (cart[productId] === 0) delete cart[productId];
+                saveCart();
+                renderCart();
+            }
+        }
+
+        function clearCart() {
+            cart = {};
+            saveCart();
+            renderCart();
+        }
+
+        function calculateTotal() {
+            return Object.entries(cart).reduce((sum, [id, qty]) => {
+                const product = products.find(p => p.id === id);
+                return product ? sum + (product.price * qty) : sum;
+            }, 0);
+        }
+
+        // Håll skärmen vaken när QR-koden visas
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try { wakeLock = await navigator.wakeLock.request('screen'); } 
+                catch (err) { console.log('Wake Lock error:', err); }
+            }
+        }
+
+        function releaseWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => { wakeLock = null; });
+            }
+        }
+
+        function openQRModal() {
+            if (!swishNumber) {
+                showMessage("Saknar nummer", "Du måste ställa in ditt Swish-nummer i inställningarna först.", "⚠️");
+                return;
+            }
+            const total = calculateTotal();
+            if (total <= 0) return;
+
+            document.getElementById('qr-total-price').textContent = `${total} kr`;
+            document.getElementById('qr-modal').classList.remove('hidden');
+            document.getElementById('qr-modal').classList.add('flex');
+
+            generateSwishQR(total);
+            requestWakeLock();
+        }
+
+        function generateSwishQR(amount) {
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = ''; 
+            
+            // Rensa format
+            const cleanNumber = swishNumber.replace(/[\s-]/g, '');
+            const cleanMessage = swishMessage.replace(/;/g, ',');
+            
+            // Format för Swish QR: C{mottagare};{belopp};{meddelande};{låskod}
+            const swishString = `C${cleanNumber};${amount};${cleanMessage};0`;
+
+            qrCodeObj = new QRCode(qrContainer, {
+                text: swishString,
+                width: 250,
+                height: 250,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.M
+            });
+        }
+
+        function closeQRModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+            document.getElementById('qr-modal').classList.remove('flex');
+            releaseWakeLock();
+        }
+
+        function finishOrder() {
+            clearCart();
+            closeQRModal();
+            showMessage("Tack!", "Klar för nästa kund.", "✅");
+        }
+
+        // --- INSTÄLLNINGAR & DELNING ---
+        function productsToText() {
+            return products.map(p => `${p.name}, ${p.price}, ${p.icon}`).join('\n');
+        }
+
+        function textToProducts(text) {
+            return text.split('\n')
+                .filter(line => line.trim() !== '')
+                .map((line, i) => {
+                    const parts = line.split(',');
+                    return {
+                        id: 'item_' + i,
+                        name: (parts[0] || 'Vara').trim(),
+                        price: parseInt(parts[1]) || 0,
+                        icon: (parts[2] || '📦').trim()
+                    };
+                });
+        }
+
+        function openSettings() {
+            document.getElementById('swish-number-input').value = swishNumber;
+            document.getElementById('swish-message-input').value = swishMessage;
+            document.getElementById('menu-input').value = productsToText();
+            
+            const modal = document.getElementById('settings-modal');
+            const content = document.getElementById('settings-content');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => { content.classList.remove('translate-y-full'); }, 10);
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settings-modal');
+            const content = document.getElementById('settings-content');
+            content.classList.add('translate-y-full');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function saveSettings() {
+            const newNumber = document.getElementById('swish-number-input').value.trim();
+            const newMessage = document.getElementById('swish-message-input').value.trim();
+            const newMenuText = document.getElementById('menu-input').value;
+
+            if (!newNumber) { showMessage("Saknar nummer", "Vänligen fyll i ett telefonnummer.", "⚠️"); return; }
+            
+            swishNumber = newNumber;
+            swishMessage = newMessage || 'Kiosken';
+            products = textToProducts(newMenuText);
+            
+            if(products.length === 0) {
+                showMessage("Fel format", "Du måste ha minst en vara i menyn.", "⚠️");
+                return;
+            }
+
+            localStorage.setItem('kiosk_swish_number', swishNumber);
+            localStorage.setItem('kiosk_swish_message', swishMessage);
+            localStorage.setItem('kiosk_products', JSON.stringify(products));
+            
+            clearCart();
+            renderProducts();
+            closeSettings();
+        }
+
+        function shareConfig() {
+            saveSettings(); 
+
+            const configObj = {
+                num: swishNumber,
+                msg: swishMessage,
+                items: products
+            };
+
+            const encodedConfig = btoa(encodeURIComponent(JSON.stringify(configObj)));
+            let currentUrl = window.location.href.split('?')[0]; 
+            let isPreviewUrl = false;
+
+            if (currentUrl.startsWith('data:') || currentUrl.startsWith('blob:') || currentUrl.startsWith('about:') || currentUrl.startsWith('file:')) {
+                currentUrl = 'https://dittnamn.github.io/kiosken/'; 
+                isPreviewUrl = true;
+            }
+
+            const shareUrl = `${currentUrl}?config=${encodedConfig}`;
+
+            // Robust kopiering för mobiler/iframes
+            const textArea = document.createElement("textarea");
+            textArea.value = shareUrl;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                document.execCommand('copy');
+                if (isPreviewUrl) {
+                    showMessage(
+                        "Exempellänk kopierad", 
+                        "Eftersom du testkör appen lokalt skapades en exempellänk. När koden laddas upp (t.ex. på GitHub) kommer länken fungera på riktigt!", 
+                        "ℹ️"
+                    );
+                } else {
+                    showMessage(
+                        "Länk kopierad!", 
+                        "Nu kan du klistra in länken i en chatt. När någon klickar på den får de exakt din meny och ditt swish-nummer.", 
+                        "📋"
+                    );
+                }
+            } catch (err) {
+                showMessage("Kopiera manuellt", `Kopiera denna länk: ${shareUrl}`, "📋");
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showMessage(title, text, icon = "ℹ️") {
+            document.getElementById('message-icon').textContent = icon;
+            document.getElementById('message-title').textContent = title;
+            document.getElementById('message-text').textContent = text;
+            document.getElementById('message-modal').classList.remove('hidden');
+        }
+
+        function closeMessage() {
+            document.getElementById('message-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
