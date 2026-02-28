@@ -10,17 +10,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        /* Optimeringar för mobil webbläsare */
         button { touch-action: manipulation; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        body { overscroll-behavior-y: none; } /* Stoppar pull-to-refresh */
-        
-        /* Hantering av safe-areas för moderna mobiler (t.ex. iPhone "flärp" och hem-streck) */
-        .pb-safe { padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
+        body { overscroll-behavior-y: none; } 
+        .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
     </style>
 </head>
-<!-- Bytte h-screen mot h-[100dvh] för att hantera dynamiska webbläsar-menyer -->
 <body class="bg-gray-100 text-gray-800 font-sans h-[100dvh] flex flex-col overflow-hidden">
 
     <!-- Header -->
@@ -37,27 +33,53 @@
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col overflow-hidden max-w-2xl mx-auto w-full relative">
-        <div class="p-4 overflow-y-auto no-scrollbar shrink-0" style="max-height: 45%;">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Produkter</h2>
-            <div id="product-grid" class="grid grid-cols-3 gap-3"></div>
+    <main class="flex-1 flex flex-col overflow-hidden w-full relative">
+        
+        <!-- VY 1: PRODUKTER -->
+        <div id="view-products" class="flex-1 flex flex-col overflow-hidden relative">
+            <!-- pb-28 ger utrymme så den sista raden varor inte döljs under den flytande korg-knappen -->
+            <div class="p-4 overflow-y-auto no-scrollbar flex-1 pb-28">
+                <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Meny</h2>
+                <div id="product-grid" class="grid grid-cols-3 gap-3"></div>
+            </div>
+
+            <!-- Flytande Korg-knapp (Visas när korgen har innehåll) -->
+            <div id="floating-cart-bar" class="absolute bottom-0 left-0 right-0 p-4 pb-safe bg-gradient-to-t from-gray-100 via-gray-100 to-transparent transform transition-transform duration-300 translate-y-full">
+                <button onclick="showCartView()" class="w-full bg-gray-900 text-white font-bold text-lg py-4 rounded-2xl shadow-xl flex justify-between items-center px-5 active:scale-[0.98] transition">
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <span class="text-2xl">🛒</span>
+                            <span id="floating-cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-black border-2 border-gray-900">0</span>
+                        </div>
+                        <span id="floating-cart-total" class="text-xl pl-2">0 kr</span>
+                    </div>
+                    <span class="text-sm text-gray-300 flex items-center gap-1">Se order <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg></span>
+                </button>
+            </div>
         </div>
 
-        <div class="flex-1 bg-white rounded-t-3xl shadow-[0_-4px_15px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden border-t border-gray-200">
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+        <!-- VY 2: KASSA / VARUKORG (Dold som standard) -->
+        <div id="view-cart" class="hidden flex-1 flex-col overflow-hidden bg-gray-50 absolute inset-0 z-20">
+            <!-- Header för kassan -->
+            <div class="p-4 bg-white border-b border-gray-200 flex justify-between items-center shrink-0 shadow-sm">
+                <button onclick="showProductView()" class="text-gray-600 flex items-center gap-1 font-medium px-3 py-2 bg-gray-100 rounded-xl active:bg-gray-200 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                    Meny
+                </button>
                 <h2 class="text-lg font-bold text-gray-800">Aktuell order</h2>
-                <button onclick="clearCart()" class="text-red-500 text-sm font-medium hover:text-red-700 px-2 py-1 bg-red-50 rounded transition-colors">Töm</button>
+                <button onclick="clearCart()" class="text-red-500 text-sm font-semibold hover:text-red-700 px-3 py-2 bg-red-50 rounded-xl transition">Töm</button>
             </div>
             
-            <div id="cart-items" class="p-4 flex-1 overflow-y-auto space-y-3">
+            <!-- Lista med varor -->
+            <div id="cart-items" class="p-4 flex-1 overflow-y-auto space-y-3 pb-4">
                 <div class="text-center text-gray-400 mt-10 italic">Varukorgen är tom</div>
             </div>
 
-            <!-- Lade till .pb-safe för att skydda knappen mot mobilens underkant -->
+            <!-- Footer med Betalknapp -->
             <div class="p-4 bg-white border-t border-gray-200 shrink-0 pb-safe shadow-[0_-10px_20px_rgba(0,0,0,0.03)] z-10">
-                <div class="flex justify-between items-end mb-4">
-                    <span class="text-gray-600 font-medium">Totalt att betala:</span>
-                    <span id="total-price" class="text-3xl font-black text-gray-900">0 kr</span>
+                <div class="flex justify-between items-end mb-4 px-2">
+                    <span class="text-gray-600 font-medium text-lg">Totalt att betala:</span>
+                    <span id="total-price" class="text-4xl font-black text-gray-900">0 kr</span>
                 </div>
                 <button id="checkout-btn" onclick="openQRModal()" disabled class="w-full bg-[#32C6A6] text-white font-bold text-xl py-4 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform transition active:scale-[0.98] flex justify-center items-center gap-2">
                     Generera Swish-QR
@@ -68,7 +90,6 @@
 
     <!-- Modal: Inställningar -->
     <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end sm:justify-center sm:items-center">
-        <!-- Max-höjd och scroll ifall menyn blir lång på små skärmar -->
         <div class="bg-white w-full sm:w-96 rounded-t-2xl sm:rounded-2xl p-6 pb-safe transform transition-transform translate-y-full sm:translate-y-0 max-h-[90vh] overflow-y-auto" id="settings-content">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-bold">Inställningar</h3>
@@ -165,6 +186,21 @@
         let qrCodeObj = null;
         let wakeLock = null;
 
+        // --- UX Navigering mellan Produkter och Kassa ---
+        function showCartView() {
+            document.getElementById('view-products').classList.add('hidden');
+            document.getElementById('view-products').classList.remove('flex');
+            document.getElementById('view-cart').classList.remove('hidden');
+            document.getElementById('view-cart').classList.add('flex');
+        }
+
+        function showProductView() {
+            document.getElementById('view-cart').classList.add('hidden');
+            document.getElementById('view-cart').classList.remove('flex');
+            document.getElementById('view-products').classList.remove('hidden');
+            document.getElementById('view-products').classList.add('flex');
+        }
+
         // --- INLÄSNING AV DELNINGSLÄNK VIA URL ---
         function checkURLForSharedConfig() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -172,7 +208,6 @@
             
             if (configParam) {
                 try {
-                    // Avkoda Base64 till JSON-sträng, och sedan till objekt
                     const config = JSON.parse(decodeURIComponent(atob(configParam)));
                     
                     if (config.num) {
@@ -190,7 +225,6 @@
                         saveCart();
                     }
 
-                    // Städa bort ?config= från URL:en för en renare adressfält (om möjligt)
                     if (!window.location.href.startsWith('data:') && !window.location.href.startsWith('blob:')) {
                         const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
                         window.history.replaceState({path: cleanUrl}, '', cleanUrl);
@@ -201,7 +235,7 @@
                     }, 500);
 
                 } catch (e) {
-                    console.error("Fel vid inläsning av delningslänk:", e);
+                    console.error("Fel vid inläsning:", e);
                     setTimeout(() => {
                         showMessage("Fel på länken", "Kunde inte läsa in inställningarna. Säkerställ att hela länken kopierades.", "❌");
                     }, 500);
@@ -220,10 +254,10 @@
         function renderProducts() {
             const grid = document.getElementById('product-grid');
             grid.innerHTML = products.map(p => `
-                <button onclick="addToCart('${p.id}')" class="bg-white border border-gray-200 rounded-xl p-3 flex flex-col items-center justify-center shadow-sm hover:shadow-md hover:border-blue-300 transition active:scale-95 active:bg-blue-50">
-                    <span class="text-3xl mb-1">${p.icon}</span>
-                    <span class="text-xs font-semibold text-gray-700 text-center leading-tight mb-1 h-8 flex items-center">${p.name}</span>
-                    <span class="text-sm font-bold text-blue-600">${p.price} kr</span>
+                <button onclick="addToCart('${p.id}')" class="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center shadow-sm hover:shadow-md hover:border-blue-400 hover:bg-blue-50 transition-all active:scale-95">
+                    <span class="text-4xl mb-2">${p.icon}</span>
+                    <span class="text-sm font-semibold text-gray-800 text-center leading-tight mb-1 h-10 flex items-center">${p.name}</span>
+                    <span class="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">${p.price} kr</span>
                 </button>
             `).join('');
         }
@@ -232,8 +266,10 @@
             const cartContainer = document.getElementById('cart-items');
             const totalDisplay = document.getElementById('total-price');
             const checkoutBtn = document.getElementById('checkout-btn');
+            const floatingBar = document.getElementById('floating-cart-bar');
             
             let total = 0;
+            let totalQty = 0;
             let cartHtml = '';
             let hasItems = false;
 
@@ -245,25 +281,26 @@
                         continue;
                     }
                     hasItems = true;
+                    totalQty += quantity;
                     const itemTotal = product.price * quantity;
                     total += itemTotal;
 
                     cartHtml += `
-                        <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-100 shadow-sm transition-all">
-                            <div class="flex items-center gap-3">
-                                <span class="text-2xl">${product.icon}</span>
+                        <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all">
+                            <div class="flex items-center gap-4">
+                                <span class="text-3xl bg-gray-50 p-2 rounded-xl">${product.icon}</span>
                                 <div>
-                                    <div class="font-semibold text-gray-800">${product.name}</div>
+                                    <div class="font-bold text-gray-800">${product.name}</div>
                                     <div class="text-sm text-gray-500">${product.price} kr/st</div>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                                    <button onclick="removeFromCart('${id}')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-white rounded shadow-sm font-bold text-lg">-</button>
-                                    <span class="w-8 text-center font-bold text-gray-800">${quantity}</span>
-                                    <button onclick="addToCart('${id}')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-white rounded shadow-sm font-bold text-lg">+</button>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center bg-gray-100 rounded-xl p-1">
+                                    <button onclick="removeFromCart('${id}')" class="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-white rounded-lg shadow-sm font-bold text-xl active:scale-95">-</button>
+                                    <span class="w-10 text-center font-bold text-gray-800 text-lg">${quantity}</span>
+                                    <button onclick="addToCart('${id}')" class="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-white rounded-lg shadow-sm font-bold text-xl active:scale-95">+</button>
                                 </div>
-                                <div class="w-14 text-right font-bold text-gray-900">${itemTotal} kr</div>
+                                <div class="w-16 text-right font-black text-gray-900 text-lg">${itemTotal} kr</div>
                             </div>
                         </div>
                     `;
@@ -271,15 +308,27 @@
             }
 
             if (!hasItems) {
-                cartContainer.innerHTML = `<div class="text-center text-gray-400 mt-10 italic">Varukorgen är tom</div>`;
+                cartContainer.innerHTML = `<div class="text-center text-gray-400 mt-20 text-lg italic flex flex-col items-center gap-4"><span class="text-5xl">🛒</span> Varukorgen är tom</div>`;
                 checkoutBtn.disabled = true;
+                
+                // Dölj den flytande korgen
+                floatingBar.classList.add('translate-y-full');
+                
+                // Om vi är i kassavyn och tömmer korgen, hoppa automatiskt tillbaka till menyn
+                if(!document.getElementById('view-cart').classList.contains('hidden')) {
+                    showProductView();
+                }
             } else {
                 cartContainer.innerHTML = cartHtml;
                 checkoutBtn.disabled = false;
+                
+                // Visa och uppdatera den flytande korgen
+                floatingBar.classList.remove('translate-y-full');
+                document.getElementById('floating-cart-count').textContent = totalQty;
+                document.getElementById('floating-cart-total').textContent = total + ' kr';
             }
 
             totalDisplay.textContent = `${total} kr`;
-            cartContainer.scrollTop = cartContainer.scrollHeight;
         }
 
         function saveCart() { localStorage.setItem('kiosk_cart', JSON.stringify(cart)); }
@@ -288,6 +337,12 @@
             cart[productId] = (cart[productId] || 0) + qty;
             saveCart();
             renderCart();
+            
+            // Pop-animation på knappen för feedback
+            const btn = document.getElementById('floating-cart-bar').querySelector('button');
+            btn.classList.add('scale-[0.97]');
+            setTimeout(() => btn.classList.remove('scale-[0.97]'), 150);
+
             if (navigator.vibrate) navigator.vibrate(20);
         }
 
@@ -368,6 +423,7 @@
         function finishOrder() {
             clearCart();
             closeQRModal();
+            showProductView(); // Hoppa tillbaka till menyn för nästa kund
             showMessage("Tack!", "Klar för nästa kund.", "✅");
         }
 
@@ -457,7 +513,6 @@
 
             const shareUrl = `${currentUrl}?config=${encodedConfig}`;
 
-            // Robust kopiering för mobiler/iframes
             const textArea = document.createElement("textarea");
             textArea.value = shareUrl;
             textArea.style.position = "fixed";
