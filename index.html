@@ -28,14 +28,21 @@
                 <h2 class="text-2xl font-black text-gray-800 tracking-tight mb-4 px-1">Meny</h2>
                 <div id="product-grid" class="grid grid-cols-3 gap-3"></div>
                 
-                <!-- Inställningsknappen diskret men klickbar i botten av listan -->
-                <div class="mt-12 mb-6 flex justify-center">
+                <!-- Inställningsknappar i botten av listan -->
+                <div class="mt-12 mb-6 flex justify-center gap-3">
                     <button onclick="openSettings()" class="flex items-center gap-2 text-gray-700 hover:text-gray-900 bg-white border border-gray-300 px-5 py-2.5 rounded-xl shadow-sm transition active:scale-95 text-sm font-medium">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         Inställningar & Dela
+                    </button>
+
+                    <!-- Info-knapp -->
+                    <button onclick="openInfo()" class="flex items-center justify-center bg-white border border-gray-300 w-[46px] h-[46px] rounded-xl shadow-sm transition active:scale-95 text-gray-500 hover:text-gray-700" title="Information om appen">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -116,6 +123,44 @@
                     Kopiera delningslänk
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal: Info -->
+    <div id="info-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end sm:justify-center sm:items-center">
+        <div class="bg-white w-full sm:w-96 rounded-t-2xl sm:rounded-2xl p-6 pb-safe transform transition-transform translate-y-full sm:translate-y-0" id="info-content">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-2xl font-bold">Om Appen</h3>
+                <button onclick="closeInfo()" class="text-gray-500 hover:text-gray-800 p-2 bg-gray-100 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <div class="text-gray-700 space-y-4 text-sm leading-relaxed">
+                <p>
+                    Kiosken är ett smidigt gratisverktyg för att underlätta för idrottsföräldrar i kiosken (och skona ländryggen från onödigt sökande efter kalkylatorn!).
+                </p>
+                <p>
+                    Appen tillhandahålls av <strong>Jonas Cederlund</strong>, som har döttrar som spelar i handbollsklubben <strong>KFUM Trollhättan</strong>.
+                </p>
+                
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 mt-5">
+                    <h4 class="font-bold text-blue-800 mb-2 flex items-center gap-2">
+                        <span class="text-lg">🤾‍♀️</span> Stöd lagkassan!
+                    </h4>
+                    <p class="text-blue-900 text-xs mb-3">
+                        Har appen varit till nytta för ert lag och besparat er stress i kiosken? Swisha gärna en valfri liten slant som ett tack! Varje krona går raka vägen in i tjejernas lagkassa i KFUM Trollhättan.
+                    </p>
+                    <div class="bg-white px-3 py-2.5 rounded-lg text-center border border-blue-200 font-medium text-gray-800 shadow-sm flex items-center justify-center gap-2">
+                        <!-- Uppdatera detta nummer till rätt Swish-nummer för lagkassan -->
+                        <span>Swish:</span> <strong class="font-mono text-base tracking-wide">07X-XXX XX XX</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="closeInfo()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 rounded-xl mt-6 active:scale-[0.98] transition">
+                Stäng
+            </button>
         </div>
     </div>
 
@@ -453,7 +498,6 @@
         }
 
         function productsToText() {
-            // Vi sparar ner i textfältet i den ordning listan är sorterad.
             return products.map(p => `${p.name}, ${p.price}, ${p.icon}`).join('\n');
         }
 
@@ -471,7 +515,6 @@
                 })
                 .filter(item => !isNaN(item.price) && item.price >= 0);
 
-            // Sortera i bokstavsordning innan id tilldelas
             parsedItems.sort((a, b) => a.name.localeCompare(b.name, 'sv'));
 
             return parsedItems.map((item, i) => {
@@ -499,6 +542,24 @@
         function closeSettings() {
             const modal = document.getElementById('settings-modal');
             const content = document.getElementById('settings-content');
+            content.classList.add('translate-y-full');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function openInfo() {
+            const modal = document.getElementById('info-modal');
+            const content = document.getElementById('info-content');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => { content.classList.remove('translate-y-full'); }, 10);
+        }
+
+        function closeInfo() {
+            const modal = document.getElementById('info-modal');
+            const content = document.getElementById('info-content');
             content.classList.add('translate-y-full');
             setTimeout(() => {
                 modal.classList.add('hidden');
