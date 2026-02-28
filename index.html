@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#2563EB">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏪</text></svg>">
     
-    <title>Kiosken POS</title>
+    <title id="page-title">Kiosken</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -23,7 +23,7 @@
     <!-- Header -->
     <header class="bg-blue-600 text-white p-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-md flex justify-between items-center shrink-0 z-10">
         <h1 class="text-xl font-bold flex items-center gap-2">
-            <span>🏪</span> Kiosken
+            <span>🏪</span> <span id="header-title">Kiosken</span>
         </h1>
         <button onclick="openSettings()" class="p-2 bg-blue-700 rounded-full hover:bg-blue-800 transition" aria-label="Inställningar">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -96,13 +96,18 @@
             
             <div class="space-y-4">
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="kiosk-title-input">Kioskens namn</label>
+                    <input type="text" id="kiosk-title-input" placeholder="T.ex. P09 Kiosken" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1" for="swish-number-input">Ditt Swish-nummer</label>
                     <input type="tel" id="swish-number-input" placeholder="T.ex. 1234567890" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1" for="swish-message-input">Standardmeddelande</label>
-                    <input type="text" id="swish-message-input" placeholder="T.ex. P09 Kiosken" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="swish-message-input">Standardmeddelande (för kundens överföring)</label>
+                    <input type="text" id="swish-message-input" placeholder="T.ex. Kioskbetalning" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
                 </div>
 
                 <div class="pt-4 border-t">
@@ -189,10 +194,16 @@
         let products = JSON.parse(localStorage.getItem('kiosk_products')) || defaultProducts;
         let swishNumber = localStorage.getItem('kiosk_swish_number') || '';
         let swishMessage = localStorage.getItem('kiosk_swish_message') || 'Kiosken';
+        let kioskTitle = localStorage.getItem('kiosk_title') || 'Kiosken';
         
         let cart = JSON.parse(localStorage.getItem('kiosk_cart')) || {}; 
         let qrCodeObj = null;
         let wakeLock = null;
+
+        function updateTitleDisplay() {
+            document.getElementById('page-title').textContent = kioskTitle;
+            document.getElementById('header-title').textContent = kioskTitle;
+        }
 
         function showCartView() {
             document.getElementById('view-products').classList.add('hidden');
@@ -216,6 +227,11 @@
                 try {
                     const config = JSON.parse(decodeURIComponent(atob(configParam)));
                     
+                    if (config.title) {
+                        kioskTitle = escapeHTML(config.title);
+                        localStorage.setItem('kiosk_title', kioskTitle);
+                        updateTitleDisplay();
+                    }
                     if (config.num) {
                         swishNumber = escapeHTML(config.num);
                         localStorage.setItem('kiosk_swish_number', swishNumber);
@@ -225,18 +241,27 @@
                         localStorage.setItem('kiosk_swish_message', swishMessage);
                     }
                     if (config.items && Array.isArray(config.items)) {
-                        // Sanera varje inkommande produkt för säkerhet och giltiga värden
-                        products = config.items.map((item, i) => {
-                            const parsedPrice = parseInt(item.price) || 0;
-                            return {
-                                id: item.id || 'item_' + i,
-                                name: escapeHTML((item.name || 'Vara').toString()),
-                                price: Math.min(100000, Math.max(0, parsedPrice)), // Tvinga priset att vara mellan 0 och 100 000
-                                icon: escapeHTML((item.icon || '📦').toString())
-                            };
-                        });
+                        // Sanera inkommande, och ta bort varor med saknat eller negativt pris helt
+                        products = config.items
+                            .map(item => {
+                                return {
+                                    name: escapeHTML((item.name || 'Vara').toString()),
+                                    price: parseInt(item.price), // Blir NaN om det saknas/är ogiltigt
+                                    icon: escapeHTML((item.icon || '📦').toString())
+                                };
+                            })
+                            .filter(item => !isNaN(item.price) && item.price >= 0) // Ta bort negativa/trasiga priser
+                            .map((item, i) => {
+                                return {
+                                    id: 'item_' + i, // Sätt ett nytt, säkert ID
+                                    name: item.name,
+                                    price: Math.min(100000, item.price), // Tak på 100 000
+                                    icon: item.icon
+                                };
+                            });
+                            
                         localStorage.setItem('kiosk_products', JSON.stringify(products));
-                        cart = {}; // Töm korgen om menyn ändras för att undvika ogiltiga id:n
+                        cart = {}; // Töm korgen om menyn ändras
                         saveCart();
                     }
 
@@ -246,7 +271,7 @@
                     }
 
                     setTimeout(() => {
-                        showMessage("Kiosken uppdaterad!", "Swish-nummer, meddelande och prislista har laddats in framgångsrikt från länken.", "✅");
+                        showMessage("Kiosken uppdaterad!", "Inställningar och prislista har laddats in framgångsrikt från länken.", "✅");
                     }, 500);
 
                 } catch (e) {
@@ -259,6 +284,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            updateTitleDisplay();
             checkURLForSharedConfig();
             renderProducts();
             renderCart();
@@ -448,24 +474,29 @@
 
         function textToProducts(text) {
             return text.split('\n')
-                .filter(line => line.trim() !== '')
-                .map((line, i) => {
+                .map(line => line.trim())
+                .filter(line => line !== '')
+                .map(line => {
                     const parts = line.split(',');
-                    const rawName = (parts[0] || '').trim();
-                    const rawPrice = parseInt(parts[1]) || 0;
-                    const rawIcon = (parts[2] || '').trim();
-
+                    return {
+                        name: (parts[0] || '').trim(),
+                        price: parseInt(parts[1]), // Blir NaN om det saknas/är ogiltigt text
+                        icon: (parts[2] || '').trim()
+                    };
+                })
+                .filter(item => !isNaN(item.price) && item.price >= 0) // Ta bort allt som saknar ett giltigt pris >= 0
+                .map((item, i) => {
                     return {
                         id: 'item_' + i,
-                        // Sanera data innan den sparas
-                        name: escapeHTML(rawName || 'Vara'),
-                        price: Math.min(100000, Math.max(0, rawPrice)), // Begränsa pris till 0-100k
-                        icon: escapeHTML(rawIcon || '📦')
+                        name: escapeHTML(item.name || 'Vara'),
+                        price: Math.min(100000, item.price), // Tak på 100 000 kr
+                        icon: escapeHTML(item.icon || '📦')
                     };
                 });
         }
 
         function openSettings() {
+            document.getElementById('kiosk-title-input').value = kioskTitle;
             document.getElementById('swish-number-input').value = swishNumber;
             document.getElementById('swish-message-input').value = swishMessage;
             document.getElementById('menu-input').value = productsToText();
@@ -488,21 +519,29 @@
         }
 
         function saveSettings() {
+            const newTitle = document.getElementById('kiosk-title-input').value.trim();
             const newNumber = document.getElementById('swish-number-input').value.trim();
             const newMessage = document.getElementById('swish-message-input').value.trim();
             const newMenuText = document.getElementById('menu-input').value;
 
             if (!newNumber) { showMessage("Saknar nummer", "Vänligen fyll i ett telefonnummer.", "⚠️"); return; }
             
+            kioskTitle = escapeHTML(newTitle || 'Kiosken');
             swishNumber = escapeHTML(newNumber);
             swishMessage = escapeHTML(newMessage || 'Kiosken');
+            
+            // Uppdatera titeln direkt
+            updateTitleDisplay();
+            
+            // Läs in de nya produkterna via textToProducts som har vårt nya filter inbyggt
             products = textToProducts(newMenuText);
             
             if(products.length === 0) {
-                showMessage("Fel format", "Du måste ha minst en vara i menyn.", "⚠️");
+                showMessage("Fel format", "Du måste ha minst en vara med ett giltigt pris (0 kr eller mer) i menyn.", "⚠️");
                 return;
             }
 
+            localStorage.setItem('kiosk_title', kioskTitle);
             localStorage.setItem('kiosk_swish_number', swishNumber);
             localStorage.setItem('kiosk_swish_message', swishMessage);
             localStorage.setItem('kiosk_products', JSON.stringify(products));
@@ -516,6 +555,7 @@
             saveSettings(); 
 
             const configObj = {
+                title: kioskTitle,
                 num: swishNumber,
                 msg: swishMessage,
                 items: products
@@ -551,7 +591,7 @@
                 } else {
                     showMessage(
                         "Länk kopierad!", 
-                        "Nu kan du klistra in länken i en chatt. När någon klickar på den får de exakt din meny och ditt swish-nummer.", 
+                        "Nu kan du klistra in länken i en chatt. När någon klickar på den får de exakt din meny, ditt namn och ditt swish-nummer.", 
                         "📋"
                     );
                 }
