@@ -14,7 +14,8 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         body { overscroll-behavior-y: none; } 
-        .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+        /* Ökat minimivärdet för Android/Samsung-telefoner som döljer botten */
+        .pb-safe { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans h-[100dvh] flex flex-col overflow-hidden">
@@ -37,13 +38,11 @@
         
         <!-- VY 1: PRODUKTER -->
         <div id="view-products" class="flex-1 flex flex-col overflow-hidden relative">
-            <!-- pb-28 ger utrymme så den sista raden varor inte döljs under den flytande korg-knappen -->
             <div class="p-4 overflow-y-auto no-scrollbar flex-1 pb-28">
                 <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Meny</h2>
                 <div id="product-grid" class="grid grid-cols-3 gap-3"></div>
             </div>
 
-            <!-- Flytande Korg-knapp (Visas när korgen har innehåll) -->
             <div id="floating-cart-bar" class="absolute bottom-0 left-0 right-0 p-4 pb-safe bg-gradient-to-t from-gray-100 via-gray-100 to-transparent transform transition-transform duration-300 translate-y-full">
                 <button onclick="showCartView()" class="w-full bg-gray-900 text-white font-bold text-lg py-4 rounded-2xl shadow-xl flex justify-between items-center px-5 active:scale-[0.98] transition">
                     <div class="flex items-center gap-3">
@@ -58,9 +57,8 @@
             </div>
         </div>
 
-        <!-- VY 2: KASSA / VARUKORG (Dold som standard) -->
+        <!-- VY 2: KASSA / VARUKORG -->
         <div id="view-cart" class="hidden flex-1 flex-col overflow-hidden bg-gray-50 absolute inset-0 z-20">
-            <!-- Header för kassan -->
             <div class="p-4 bg-white border-b border-gray-200 flex justify-between items-center shrink-0 shadow-sm">
                 <button onclick="showProductView()" class="text-gray-600 flex items-center gap-1 font-medium px-3 py-2 bg-gray-100 rounded-xl active:bg-gray-200 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
@@ -70,12 +68,10 @@
                 <button onclick="clearCart()" class="text-red-500 text-sm font-semibold hover:text-red-700 px-3 py-2 bg-red-50 rounded-xl transition">Töm</button>
             </div>
             
-            <!-- Lista med varor -->
-            <div id="cart-items" class="p-4 flex-1 overflow-y-auto space-y-3 pb-4">
+            <div id="cart-items" class="p-4 flex-1 overflow-y-auto pb-6">
                 <div class="text-center text-gray-400 mt-10 italic">Varukorgen är tom</div>
             </div>
 
-            <!-- Footer med Betalknapp -->
             <div class="p-4 bg-white border-t border-gray-200 shrink-0 pb-safe shadow-[0_-10px_20px_rgba(0,0,0,0.03)] z-10">
                 <div class="flex justify-between items-end mb-4 px-2">
                     <span class="text-gray-600 font-medium text-lg">Totalt att betala:</span>
@@ -164,7 +160,6 @@
     </div>
 
     <script>
-        // Standardmeny
         const defaultProducts = [
             { id: 'item_0', name: 'Kaffe', price: 20, icon: '☕️' },
             { id: 'item_1', name: 'Te', price: 15, icon: '🍵' },
@@ -177,7 +172,6 @@
             { id: 'item_8', name: 'Chips', price: 20, icon: '🥔' }
         ];
 
-        // Ladda state från LocalStorage ELLER Standard
         let products = JSON.parse(localStorage.getItem('kiosk_products')) || defaultProducts;
         let swishNumber = localStorage.getItem('kiosk_swish_number') || '';
         let swishMessage = localStorage.getItem('kiosk_swish_message') || 'Kiosken';
@@ -186,7 +180,6 @@
         let qrCodeObj = null;
         let wakeLock = null;
 
-        // --- UX Navigering mellan Produkter och Kassa ---
         function showCartView() {
             document.getElementById('view-products').classList.add('hidden');
             document.getElementById('view-products').classList.remove('flex');
@@ -201,7 +194,6 @@
             document.getElementById('view-products').classList.add('flex');
         }
 
-        // --- INLÄSNING AV DELNINGSLÄNK VIA URL ---
         function checkURLForSharedConfig() {
             const urlParams = new URLSearchParams(window.location.search);
             const configParam = urlParams.get('config');
@@ -221,7 +213,7 @@
                     if (config.items && Array.isArray(config.items)) {
                         products = config.items;
                         localStorage.setItem('kiosk_products', JSON.stringify(products));
-                        cart = {}; // Töm korgen om menyn ändras
+                        cart = {};
                         saveCart();
                     }
 
@@ -250,7 +242,6 @@
             if (!swishNumber) setTimeout(openSettings, 500);
         });
 
-        // --- FUNKTIONER FÖR BUTIKEN ---
         function renderProducts() {
             const grid = document.getElementById('product-grid');
             grid.innerHTML = products.map(p => `
@@ -285,22 +276,25 @@
                     const itemTotal = product.price * quantity;
                     total += itemTotal;
 
+                    // NY UX: Tvåvånings-kort (Stacking) för bättre läsbarhet på mobiler
                     cartHtml += `
-                        <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all">
-                            <div class="flex items-center gap-4">
-                                <span class="text-3xl bg-gray-50 p-2 rounded-xl">${product.icon}</span>
-                                <div>
-                                    <div class="font-bold text-gray-800">${product.name}</div>
-                                    <div class="text-sm text-gray-500">${product.price} kr/st</div>
+                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all mb-3">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3 pr-2">
+                                    <span class="text-3xl bg-gray-50 p-2 rounded-xl shrink-0">${product.icon}</span>
+                                    <div>
+                                        <div class="font-bold text-gray-800 leading-tight">${product.name}</div>
+                                        <div class="text-sm text-gray-500 mt-0.5">${product.price} kr/st</div>
+                                    </div>
                                 </div>
+                                <div class="font-black text-gray-900 text-lg whitespace-nowrap">${itemTotal} kr</div>
                             </div>
-                            <div class="flex items-center gap-4">
-                                <div class="flex items-center bg-gray-100 rounded-xl p-1">
-                                    <button onclick="removeFromCart('${id}')" class="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-white rounded-lg shadow-sm font-bold text-xl active:scale-95">-</button>
-                                    <span class="w-10 text-center font-bold text-gray-800 text-lg">${quantity}</span>
-                                    <button onclick="addToCart('${id}')" class="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-white rounded-lg shadow-sm font-bold text-xl active:scale-95">+</button>
+                            <div class="flex justify-end border-t border-gray-50 pt-3">
+                                <div class="flex items-center bg-gray-100 rounded-xl p-1 shadow-inner">
+                                    <button onclick="removeFromCart('${id}')" class="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-white rounded-lg shadow-sm font-bold text-xl active:scale-95 transition-all">-</button>
+                                    <span class="w-12 text-center font-bold text-gray-800 text-lg">${quantity}</span>
+                                    <button onclick="addToCart('${id}')" class="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-white rounded-lg shadow-sm font-bold text-xl active:scale-95 transition-all">+</button>
                                 </div>
-                                <div class="w-16 text-right font-black text-gray-900 text-lg">${itemTotal} kr</div>
                             </div>
                         </div>
                     `;
@@ -310,11 +304,8 @@
             if (!hasItems) {
                 cartContainer.innerHTML = `<div class="text-center text-gray-400 mt-20 text-lg italic flex flex-col items-center gap-4"><span class="text-5xl">🛒</span> Varukorgen är tom</div>`;
                 checkoutBtn.disabled = true;
-                
-                // Dölj den flytande korgen
                 floatingBar.classList.add('translate-y-full');
                 
-                // Om vi är i kassavyn och tömmer korgen, hoppa automatiskt tillbaka till menyn
                 if(!document.getElementById('view-cart').classList.contains('hidden')) {
                     showProductView();
                 }
@@ -322,7 +313,6 @@
                 cartContainer.innerHTML = cartHtml;
                 checkoutBtn.disabled = false;
                 
-                // Visa och uppdatera den flytande korgen
                 floatingBar.classList.remove('translate-y-full');
                 document.getElementById('floating-cart-count').textContent = totalQty;
                 document.getElementById('floating-cart-total').textContent = total + ' kr';
@@ -338,7 +328,6 @@
             saveCart();
             renderCart();
             
-            // Pop-animation på knappen för feedback
             const btn = document.getElementById('floating-cart-bar').querySelector('button');
             btn.classList.add('scale-[0.97]');
             setTimeout(() => btn.classList.remove('scale-[0.97]'), 150);
@@ -423,11 +412,10 @@
         function finishOrder() {
             clearCart();
             closeQRModal();
-            showProductView(); // Hoppa tillbaka till menyn för nästa kund
+            showProductView(); 
             showMessage("Tack!", "Klar för nästa kund.", "✅");
         }
 
-        // --- INSTÄLLNINGAR & DELNING ---
         function productsToText() {
             return products.map(p => `${p.name}, ${p.price}, ${p.icon}`).join('\n');
         }
