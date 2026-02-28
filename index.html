@@ -111,7 +111,7 @@
 
                 <div class="pt-4 border-t">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Meny & Priser</label>
-                    <p class="text-xs text-gray-500 mb-2">En vara per rad. Format: <b>Namn, Pris, Emoji</b></p>
+                    <p class="text-xs text-gray-500 mb-2">En vara per rad. Format: <b>Namn, Pris, Emoji (frivilligt)</b></p>
                     <textarea id="menu-input" rows="6" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono whitespace-nowrap overflow-x-auto"></textarea>
                 </div>
             </div>
@@ -169,9 +169,11 @@
                     <p class="text-blue-900 text-xs mb-3">
                         Har appen varit till nytta för ert lag och besparat er stress i kiosken? Swisha gärna en valfri liten slant som ett tack! Varje krona går raka vägen in i tjejernas lagkassa i KFUM Trollhättan.
                     </p>
-                    <div class="bg-white px-3 py-2.5 rounded-lg text-center border border-blue-200 font-medium text-gray-800 shadow-sm flex items-center justify-center gap-2">
-                        <!-- Uppdatera detta nummer till rätt Swish-nummer för lagkassan -->
+                    
+                    <!-- Klickbart Swish-nummer med kopieringsfunktion -->
+                    <div onclick="copyDonationNumber(this)" class="bg-white px-3 py-3 rounded-lg text-center border border-blue-200 font-medium text-gray-800 shadow-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-50 active:scale-95 transition" title="Klicka för att kopiera">
                         <span>Swish:</span> <strong class="font-mono text-base tracking-wide">0723-041162</strong>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                     </div>
                 </div>
             </div>
@@ -294,7 +296,7 @@
                                 return {
                                     name: escapeHTML((item.name || 'Vara').toString()),
                                     price: parseInt(item.price),
-                                    icon: escapeHTML((item.icon || '📦').toString())
+                                    icon: item.icon ? escapeHTML(item.icon.toString()) : ''
                                 };
                             })
                             .filter(item => !isNaN(item.price) && item.price >= 0);
@@ -353,10 +355,10 @@
         function renderProducts() {
             const grid = document.getElementById('product-grid');
             grid.innerHTML = products.map(p => `
-                <button onclick="addToCart('${p.id}')" class="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center shadow-sm hover:shadow-md hover:border-blue-400 hover:bg-blue-50 transition-all active:scale-95">
-                    <span class="text-4xl mb-2">${p.icon}</span>
-                    <span class="text-sm font-semibold text-gray-800 text-center leading-tight mb-1 h-10 flex items-center">${p.name}</span>
-                    <span class="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">${p.price} kr</span>
+                <button onclick="addToCart('${p.id}')" class="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center shadow-sm hover:shadow-md hover:border-blue-400 hover:bg-blue-50 transition-all active:scale-95 h-full min-h-[120px]">
+                    ${p.icon ? `<span class="text-4xl mb-2">${p.icon}</span>` : ''}
+                    <span class="text-sm font-semibold text-gray-800 text-center leading-tight mb-1 h-10 flex items-center justify-center w-full">${p.name}</span>
+                    <span class="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg shrink-0 mt-auto">${p.price} kr</span>
                 </button>
             `).join('');
         }
@@ -390,7 +392,7 @@
                         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all mb-3">
                             <div class="flex items-start justify-between mb-3">
                                 <div class="flex items-center gap-3 pr-2">
-                                    <span class="text-3xl bg-gray-50 p-2 rounded-xl shrink-0">${product.icon}</span>
+                                    ${product.icon ? `<span class="text-3xl bg-gray-50 p-2 rounded-xl shrink-0">${product.icon}</span>` : ''}
                                     <div>
                                         <div class="font-bold text-gray-800 leading-tight">${product.name}</div>
                                         <div class="text-sm text-gray-500 mt-0.5">${product.price} kr/st</div>
@@ -527,7 +529,7 @@
         }
 
         function productsToText() {
-            return products.map(p => `${p.name}, ${p.price}, ${p.icon}`).join('\n');
+            return products.map(p => p.icon ? `${p.name}, ${p.price}, ${p.icon}` : `${p.name}, ${p.price}`).join('\n');
         }
 
         function textToProducts(text) {
@@ -539,7 +541,7 @@
                     return {
                         name: (parts[0] || '').trim(),
                         price: parseInt(parts[1]), 
-                        icon: (parts[2] || '').trim()
+                        icon: parts[2] ? parts[2].trim() : ''
                     };
                 })
                 .filter(item => !isNaN(item.price) && item.price >= 0);
@@ -551,7 +553,7 @@
                     id: 'item_' + i,
                     name: escapeHTML(item.name || 'Vara'),
                     price: Math.min(100000, item.price), 
-                    icon: escapeHTML(item.icon || '📦')
+                    icon: item.icon ? escapeHTML(item.icon) : ''
                 };
             });
         }
@@ -614,6 +616,31 @@
                     openSettings();
                 }
             }, 300);
+        }
+
+        // --- KOPIERA DONATIONSNUMMER ---
+        function copyDonationNumber(element) {
+            const numToCopy = "07X-XXX XX XX"; // Tänk på att skriva in ditt faktiska swishnummer här i din kod
+            
+            // Robust kopiering för iframes och mobil
+            const textArea = document.createElement("textarea");
+            textArea.value = numToCopy;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                document.execCommand('copy');
+                const originalHTML = element.innerHTML;
+                element.innerHTML = `<span class="text-green-600 font-bold flex items-center gap-1"><span>✅</span> Kopierat!</span>`;
+                setTimeout(() => { element.innerHTML = originalHTML; }, 2000);
+            } catch (err) {
+                console.error("Kunde inte kopiera", err);
+            }
+            
+            document.body.removeChild(textArea);
         }
 
         function saveSettings() {
