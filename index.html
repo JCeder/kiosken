@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#2563EB">
+    <meta name="theme-color" content="#f3f4f6"> <!-- Ändrad till bg-gray-100 för att smälta in med toppen -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏪</text></svg>">
     
-    <title id="page-title">Kiosken</title>
+    <title>Kiosken</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -20,27 +20,26 @@
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans h-[100dvh] flex flex-col overflow-hidden">
 
-    <!-- Header -->
-    <header class="bg-blue-600 text-white p-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-md flex justify-between items-center shrink-0 z-10">
-        <h1 class="text-xl font-bold flex items-center gap-2">
-            <span>🏪</span> <span id="header-title">Kiosken</span>
-        </h1>
-        <button onclick="openSettings()" class="p-2 bg-blue-700 rounded-full hover:bg-blue-800 transition" aria-label="Inställningar">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-        </button>
-    </header>
-
     <!-- Main Content Area -->
     <main class="flex-1 flex flex-col overflow-hidden w-full relative">
         
         <!-- VY 1: PRODUKTER -->
-        <div id="view-products" class="flex-1 flex flex-col overflow-hidden relative">
+        <!-- Lade till pt-[max(1rem,env(safe-area-inset-top))] för att hantera "flärpen" i toppen nu när headern är borta -->
+        <div id="view-products" class="flex-1 flex flex-col overflow-hidden relative pt-[max(1rem,env(safe-area-inset-top))]">
             <div class="p-4 overflow-y-auto no-scrollbar flex-1 pb-28">
-                <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Meny</h2>
+                <h2 class="text-2xl font-black text-gray-800 tracking-tight mb-4 px-1">Meny</h2>
                 <div id="product-grid" class="grid grid-cols-3 gap-3"></div>
+                
+                <!-- Inställningsknappen diskret i botten av listan -->
+                <div class="mt-12 mb-6 flex justify-center">
+                    <button onclick="openSettings()" class="flex items-center gap-2 text-gray-400 hover:text-gray-600 bg-white border border-gray-200 px-4 py-2 rounded-xl shadow-sm transition active:scale-95 text-sm font-medium">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Inställningar & Dela
+                    </button>
+                </div>
             </div>
 
             <div id="floating-cart-bar" class="absolute bottom-0 left-0 right-0 p-4 pb-safe bg-gradient-to-t from-gray-100 via-gray-100 to-transparent transform transition-transform duration-300 translate-y-full">
@@ -59,7 +58,8 @@
 
         <!-- VY 2: KASSA / VARUKORG -->
         <div id="view-cart" class="hidden flex-1 flex-col overflow-hidden bg-gray-50 absolute inset-0 z-20">
-            <div class="p-4 bg-white border-b border-gray-200 flex justify-between items-center shrink-0 shadow-sm">
+            <!-- Lade till pt-[max(1rem,env(safe-area-inset-top))] även här för toppen -->
+            <div class="p-4 pt-[max(1rem,env(safe-area-inset-top))] bg-white border-b border-gray-200 flex justify-between items-center shrink-0 shadow-sm">
                 <button onclick="showProductView()" class="text-gray-600 flex items-center gap-1 font-medium px-3 py-2 bg-gray-100 rounded-xl active:bg-gray-200 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
                     Meny
@@ -95,11 +95,6 @@
             </div>
             
             <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1" for="kiosk-title-input">Kioskens namn</label>
-                    <input type="text" id="kiosk-title-input" placeholder="T.ex. P09 Kiosken" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
-                </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1" for="swish-number-input">Ditt Swish-nummer</label>
                     <input type="tel" id="swish-number-input" placeholder="T.ex. 1234567890" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
@@ -194,16 +189,10 @@
         let products = JSON.parse(localStorage.getItem('kiosk_products')) || defaultProducts;
         let swishNumber = localStorage.getItem('kiosk_swish_number') || '';
         let swishMessage = localStorage.getItem('kiosk_swish_message') || 'Kiosken';
-        let kioskTitle = localStorage.getItem('kiosk_title') || 'Kiosken';
         
         let cart = JSON.parse(localStorage.getItem('kiosk_cart')) || {}; 
         let qrCodeObj = null;
         let wakeLock = null;
-
-        function updateTitleDisplay() {
-            document.getElementById('page-title').textContent = kioskTitle;
-            document.getElementById('header-title').textContent = kioskTitle;
-        }
 
         function showCartView() {
             document.getElementById('view-products').classList.add('hidden');
@@ -227,11 +216,6 @@
                 try {
                     const config = JSON.parse(decodeURIComponent(atob(configParam)));
                     
-                    if (config.title) {
-                        kioskTitle = escapeHTML(config.title);
-                        localStorage.setItem('kiosk_title', kioskTitle);
-                        updateTitleDisplay();
-                    }
                     if (config.num) {
                         swishNumber = escapeHTML(config.num);
                         localStorage.setItem('kiosk_swish_number', swishNumber);
@@ -284,7 +268,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            updateTitleDisplay();
             checkURLForSharedConfig();
             renderProducts();
             renderCart();
@@ -496,7 +479,6 @@
         }
 
         function openSettings() {
-            document.getElementById('kiosk-title-input').value = kioskTitle;
             document.getElementById('swish-number-input').value = swishNumber;
             document.getElementById('swish-message-input').value = swishMessage;
             document.getElementById('menu-input').value = productsToText();
@@ -519,19 +501,14 @@
         }
 
         function saveSettings() {
-            const newTitle = document.getElementById('kiosk-title-input').value.trim();
             const newNumber = document.getElementById('swish-number-input').value.trim();
             const newMessage = document.getElementById('swish-message-input').value.trim();
             const newMenuText = document.getElementById('menu-input').value;
 
             if (!newNumber) { showMessage("Saknar nummer", "Vänligen fyll i ett telefonnummer.", "⚠️"); return; }
             
-            kioskTitle = escapeHTML(newTitle || 'Kiosken');
             swishNumber = escapeHTML(newNumber);
             swishMessage = escapeHTML(newMessage || 'Kiosken');
-            
-            // Uppdatera titeln direkt
-            updateTitleDisplay();
             
             // Läs in de nya produkterna via textToProducts som har vårt nya filter inbyggt
             products = textToProducts(newMenuText);
@@ -541,7 +518,6 @@
                 return;
             }
 
-            localStorage.setItem('kiosk_title', kioskTitle);
             localStorage.setItem('kiosk_swish_number', swishNumber);
             localStorage.setItem('kiosk_swish_message', swishMessage);
             localStorage.setItem('kiosk_products', JSON.stringify(products));
@@ -555,7 +531,6 @@
             saveSettings(); 
 
             const configObj = {
-                title: kioskTitle,
                 num: swishNumber,
                 msg: swishMessage,
                 items: products
@@ -591,7 +566,7 @@
                 } else {
                     showMessage(
                         "Länk kopierad!", 
-                        "Nu kan du klistra in länken i en chatt. När någon klickar på den får de exakt din meny, ditt namn och ditt swish-nummer.", 
+                        "Nu kan du klistra in länken i en chatt. När någon klickar på den får de exakt din meny och ditt swish-nummer.", 
                         "📋"
                     );
                 }
